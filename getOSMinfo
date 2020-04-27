@@ -1,0 +1,63 @@
+import pandas as pd
+import requests
+import json
+from bs4 import BeautifulSoup
+from time import sleep
+
+quarter_1 = pd.read_csv(r'Downloads/movement-speeds-quarterly-by-hod-nairobi-2019-Q1.csv')
+quarter_2 = pd.read_csv(r'Downloads/movement-speeds-quarterly-by-hod-nairobi-2019-Q2.csv')
+quarter_3 = pd.read_csv(r'Downloads/movement-speeds-quarterly-by-hod-nairobi-2019-Q3.csv')
+quarter_4 = pd.read_csv(r'Downloads/movement-speeds-quarterly-by-hod-nairobi-2019-Q4.csv')
+
+speeds_2019 = pd.concat([quarter_1, quarter_2, quarter_3, quarter_4])
+
+print('There are', len(list(speeds_2019['osm_way_id'].unique())), 'api requests to make.')
+
+osms = list(speeds_2019['osm_way_id'].unique())
+
+road_name = {}
+road_type = {}
+one_way = {}
+surface = {}
+
+for idx, osm in enumerate(osms):
+    if idx%150 == 0:
+        print('Requests completed:', idx)
+    url = 'https://www.openstreetmap.org/api/0.6/way/{}.json'.format(osm)
+    res = requests.get(url)
+    if res.status_code <= 400:
+        res.raise_for_status()
+        way_id_dict = json.loads(res.text)
+        elements_list = way_id_dict['elements']
+        elements = elements_list[0]
+        tags_dict = elements['tags']
+        name_of_road = tags_dict.get('name')
+        type_of_road = tags_dict.get('highway')
+        one_way_status = tags_dict.get('oneway')
+        road_surface = tags_dict.get('surface')
+        road_name.setdefault(osm, name_of_road)
+        road_type.setdefault(osm, type_of_road)
+        one_way.setdefault(osm, one_way_status)
+        surface.setdefault(osm, road_surface)
+        sleep(5)
+        
+roadname_df = pd.DataFrame.from_dict([road_name]).transpose()
+roadtype_df = pd.DataFrame.from_dict([road_type]).transpose()
+oneway_df = pd.DataFrame.from_dict([one_way]).transpose()
+surface_df = pd.DataFrame.from_dict([surface]).transpose()
+
+roadname_df2 = roadname_df.reset_index().rename(columns={0:"road_name", "index": "osm_way_id"})
+
+roadtype_df2 = roadtype_df.reset_index().rename(columns={0:"road_yype", "index": "osm_way_id"})
+
+oneway_df2 = oneway_df.reset_index().rename(columns={0:"one_way", "index": "osm_way_id"})
+
+surface_df2 = surface_df.reset_index().rename(columns={0:"surface", "index": "osm_way_id"})
+
+roads1 = pd.merge(roadname_df2, roadtype_df2, left_on='osm_way_id', right_on="osm_way_id")
+roads2 = pd.merge(oneway_df2, surface_df2, left_on='osm_way_id', right_on="osm_way_id")
+
+roads_api = pd.merge(roads1, roads2, left_on='osm_way_id', right_on="osm_way_id")
+roads_api.head(2)
+
+Nairobi_osm_api = pd.merge(speeds_2019, roads_api, left_on='osm_way_id', right_on="osm_way_id")
