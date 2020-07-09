@@ -71,8 +71,7 @@ def data_by_roadway(pop_rd, engine):
     temp_dict = {}
     
     for i in range(0,24):
-        avrg_spds = f'''SELECT speed_kph_mean FROM uber_data WHERE road_name = '{pop_rd}' AND hour_of_day = {j}'''
-    
+        avrg_spds = f'''SELECT speed_kph_mean FROM uber_data WHERE road_name = '{pop_rd}' AND hour_of_day = {i}'''
     
         temp_dict[i] = pd.read_sql(avrg_spds, engine)
     
@@ -82,3 +81,47 @@ def data_by_roadway(pop_rd, engine):
 
 Limuru = data_by_roadway("Limuru Road", engine)
 
+
+# Visually check to ensure that data for each group is normally distributed
+# (In this case, "group" refers to hour of day during which speeds were recorded)
+
+for i in range(0, 24):
+    Limuru['Limuru Road'][i].plot.hist("speed_kph_mean", alpha=0.5)
+
+ 
+# Function to check for standard deviatiation and standard variance across each group
+    
+def variance_and_stdeviation(datadict, roadname):
+    
+    for i in range(0, 24):
+        df = datadict[roadname][i]
+        
+        speeds = df.values.tolist()
+        speeds_lst = [item for sublist in speeds for item in sublist]
+
+        valuesum = 0
+        simple_mean = 0
+        sumsqrs_numerator = 0
+        checksum = 0
+
+        for j in speeds_lst:
+            valuesum += j
+
+        simple_mean = valuesum/len(speeds_lst)
+
+        for k in speeds_lst:
+            temp = round(k - simple_mean, 2)
+            checksum += temp
+            t = temp **2
+            sumsqrs_numerator += t
+
+        sample_variance = sumsqrs_numerator/ (len(speeds_lst)-1)
+
+        stdeviation = math.sqrt(sample_variance)
+
+        datadict[roadname][i]["sample_variance"] = sample_variance
+        datadict[roadname][i]["stdeviation"] = stdeviation
+
+        print(sample_variance)
+        print(stdeviation)
+   
