@@ -122,6 +122,8 @@ def variance_and_stdeviation(datadict, roadname):
         datadict[roadname][i]["sample_variance"] = sample_variance
         datadict[roadname][i]["stdeviation"] = stdeviation
 
-        print(sample_variance)
-        print(stdeviation)
+#         print(sample_variance)
+#         print(stdeviation)
+
+
    
