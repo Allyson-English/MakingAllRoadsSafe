@@ -274,3 +274,59 @@ for i in range(0,23):
 
 group_mean = group_mean/24
 group_mean
+
+
+class UniqueRoadway:
+    def __init__(self, name, df):
+        self.__df = df
+        self.name = name
+        self.p85 = self.__df['speed_kph_p85']
+        
+    def review(self, num1, num = 0):
+        display(self.__df[num:num1])
+        return
+        
+    def cols(self):
+        return self.__df.columns
+    
+    def anova_oneway(self, colname):
+        
+        li = [kamiti[kamiti.hour_of_day == i][colname] for i in range(24)]
+            
+        stat, p = scipy.stats.f_oneway(*li)
+        print('Statistics=%.3f, p=%.3f' % (stat, p))
+        
+        # interpret
+        alpha = 0.05
+        if p > alpha:
+            print('Same distributions (fail to reject H0)')
+        else:
+            print('Different distributions (reject H0)')
+            
+    def hour_of_day(self, num):
+        
+        return self.__df[self.__df.hour_of_day == num]
+    
+    def morning_commute(self):
+        
+        temp = pd.DataFrame()
+        
+        for i in range(6,10):
+            
+            t = self.__df[self.__df.hour_of_day == i]
+            
+            temp = temp.append(t, sort=False)
+        
+        return temp
+    
+    def evening_commute(self):
+        
+        temp = pd.DataFrame()
+        
+        for i in range(17,22):
+            
+            t = self.__df[self.__df.hour_of_day == i]
+            
+            temp = temp.append(t, sort=False)
+        
+        return temp
